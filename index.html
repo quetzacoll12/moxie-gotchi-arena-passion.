@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Moxie-Gotchi Arena v5.0 - Edición Pasión Mundialista</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            background-color: #080f14; color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0; padding: 15px;
+        }
+        .game-container {
+            width: 1150px; background-color: #0f1a24;
+            border: 3px solid #10b981; border-radius: 16px;
+            padding: 20px; box-shadow: 0 25px 50px rgba(0,0,0,0.8);
+        }
+        .title-banner {
+            text-align: center; padding: 12px; margin-bottom: 15px;
+            background: linear-gradient(135deg, #047857 0%, #10b981 100%);
+            border-radius: 8px; font-weight: bold; text-transform: uppercase;
+        }
+        .starter-selector {
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px;
+            background: #070d14; padding: 10px; border-radius: 10px; border: 1px solid #1f2937;
+        }
+        .starter-card {
+            background: #142331; border: 2px solid #1f2937; padding: 8px; border-radius: 6px;
+            text-align: center; cursor: pointer; font-size: 12px; font-weight: bold; transition: all 0.2s;
+        }
+        .starter-card:hover { border-color: #10b981; background: #1c3144; }
+        .main-layout { display: grid; grid-template-columns: 320px 1fr; gap: 20px; }
+        .panel { background-color: #142331; border: 2px solid #1e293b; border-radius: 12px; padding: 16px; margin-bottom: 15px; }
+        .panel-title { font-size: 13px; font-weight: bold; text-transform: uppercase; color: #34d399; margin-bottom: 12px; border-bottom: 2px solid #1e293b; padding-bottom: 4px; }
+        .stat-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 13px; }
+        .stat-highlight { font-weight: bold; color: #38bdf8; }
+        .avatar-box { text-align: center; background: #070d14; padding: 15px; border-radius: 8px; border: 1px solid #10b981; }
+        .avatar-box img { height: 110px; border-radius: 4px; object-fit: contain; }
+        .btn-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+        .rpg-btn { background: #1c3144; border: 1px solid #10b981; color: white; padding: 10px; border-radius: 6px; cursor: pointer; text-align: center; font-size: 11px; font-weight: bold; }
+        .rpg-btn:hover:not(:disabled) { background: #10b981; color: black; }
+        .rpg-btn:disabled { background: #111827; border-color: #374151; color: #4b5563; cursor: not-allowed; }
+        .skill-tree { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+        .tree-node { background: #070d14; border: 2px dashed #4b5563; padding: 10px; border-radius: 8px; text-align: center; cursor: pointer; }
+        .tree-node.unlocked { border-style: solid; border-color: #eab308; background: #2e2509; }
+        .battle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; text-align: center; background: #070d14; padding: 12px; border-radius: 8px; }
+        .hp-container, .mp-container { background: #1e293b; height: 12px; border-radius: 6px; overflow: hidden; margin-top: 4px; border: 1px solid #374151; }
+        .hp-fill { background: #10b981; height: 100%; width: 100%; transition: width 0.2s; }
+        .mp-fill { background: #3b82f6; height: 100%; width: 100%; transition: width 0.2s; }
+        .exp-container { background: #1f2937; height: 8px; border-radius: 4px; overflow: hidden; margin-top: 4px; }
+        .exp-fill { background: #eab308; height: 100%; width: 0%; transition: width 0.4s; }
+        .pokemon-moves-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .move-btn { background: #111827; border: 2px solid #374151; color: #4b5563; padding: 12px; border-radius: 6px; font-weight: bold; text-align: left; cursor: not-allowed; font-size: 12px; }
+        .move-btn.enabled { border-color: #10b981; color: white; cursor: pointer; background: #1c3144; }
+        .move-btn.enabled:hover { background: #10b981; color: black; }
+        .inventory-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; text-align: center; }
+        .inv-card { background: #070d14; padding: 8px; border-radius: 6px; border: 1px solid #1e293b; font-size: 12px; }
+        .db-console { background: #03070a; font-family: monospace; font-size: 11px; padding: 8px; border-radius: 6px; border-left: 3px solid #10b981; color: #a7f3d0; height: 95px; overflow-y: hidden; }
+        .rpg-select { background: #1c3144; color: white; border: 1px solid #10b981; padding: 4px; border-radius: 4px; font-size: 11px; width: 100%; margin-bottom: 8px; }
+        .toast-popup { position: fixed; top: 15px; left: 50%; transform: translateX(-50%); background: #10b981; color: black; padding: 8px 16px; font-weight: bold; border-radius: 6px; display: none; z-index: 1000; }
+    </style>
+</head>
+<body>
+
+<div id="toast" class="toast-popup">¡Éxito!</div>
+
+<div class="game-container">
+    <div class="title-banner">
+        <h2>⚽ Moxie-Gotchi Arena v5.0 - Edición Pasión y Rivalidad ⚽</h2>
+    </div>
+
+    <div class="starter-selector">
+        <div class="starter-card" style="border-color: #ef4444;" onclick="changeStarter('Hinchada Ferviente (Pasión)')">🔥 Hincha Ferviente</div>
+        <div class="starter-card" style="border-color: #22c55e;" onclick="changeStarter('Director Táctico (Pasión)')">🧠 Director Táctico</div>
+        <div class="starter-card" style="border-color: #38bdf8;" onclick="changeStarter('Portero Muralla (Pasión)')">🧤 Portero Muralla</div>
+    </div>
+
+    <div class="main-layout">
+        <div>
+            <div class="panel">
+                <div class="panel-title" style="color: #38bdf8;">Gestión de la Pasión</div>
+                <div class="avatar-box">
+                    <img id="moxieSprite" src="mixboard-image.png" alt="Moxie"><br>
+                    <h3 id="lblMoxieName" style="margin: 5px 0 0 0; color:#34d399;">Cargando...</h3>
+                    <h4 id="lblLevel" style="margin: 4px 0 2px 0;">División 1</h4>
+                    <span style="font-size:12px; color:#eab308; font-weight:bold;">💰 <span id="lblCoins">0</span> MC</span>
+                    <div style="text-align: left; margin-top: 8px; font-size: 11px; color:#94a3b8;">
+                        Progreso de Temporada: <span id="txtExp">0/100</span>
+                        <div class="exp-container"><div id="expFill" class="exp-fill"></div></div>
+                    </div>
+                </div>
+                <div style="margin-top: 10px;">
+                    <div class="stat-row"><span>❤️ Resistencia Física:</span> <span class="stat-highlight" id="lblHp">100</span></div>
+                    <div class="stat-row"><span>⚔️ Poder Ofensivo:</span> <span class="stat-highlight" id="lblAtk">15</span></div>
+                    <div class="stat-row"><span>✨ Puntos de Pizarra (SP):</span> <span style="color:#eab308; font-weight:bold;" id="lblSp">0</span></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title" style="color: #a855f7;">🎒 Maletín del Utilero</div>
+                <div class="inventory-grid">
+                    <div class="inv-card">
+                        🧪 Bebidas Isotónicas: <b id="countHPItem" style="color:#22c55e;">0</b><br>
+                        <button class="rpg-btn" style="padding:2px 5px; margin-top:4px; font-size:9px;" onclick="useItem('hp')">Usar en Entretiempo</button>
+                    </div>
+                    <div class="inv-card">
+                        🧪 Geles Tácticos: <b id="countMPItem" style="color:#38bdf8;">0</b><br>
+                        <button class="rpg-btn" style="padding:2px 5px; margin-top:4px; font-size:9px;" onclick="useItem('mp')">Usar</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title" style="color: #38bdf8;">Historial del Club (Logs)</div>
+                <select class="rpg-select" id="selFilter" onchange="refreshUI()">
+                    <option value="TODOS">🔍 Ver Todo el Partido</option>
+                    <option value="CLUB">🎟️ Gestión del Club</option>
+                    <option value="ESTRATEGIA">📋 Pizarra Estratégica</option>
+                    <option value="PARTIDO">🏟️ Eventos en la Cancha</option>
+                </select>
+                <div class="db-console" id="consoleLogs">Conectando con el VAR...</div>
+            </div>
+        </div>
+
+        <div>
+            <div class="panel">
+                <div class="panel-title">📣 Preparación Mundialista (Server side Secure)</div>
+                <div class="btn-grid">
+                    <button class="rpg-btn" onclick="sendAction('feed')">🎟️ Comprar Entrada<br><span style="font-size:9px; color:#f87171;">20 MC</span></button>
+                    <button class="rpg-btn" onclick="sendAction('train')">⚽ Entrenar Táctica<br><span style="font-size:9px; color:#f87171;">50 MC</span></button>
+                    <button class="rpg-btn" id="btnRestAction" onclick="handleRest()">💤 Ir a Vestuario<br><span style="font-size:9px; color:#34d399;" id="lblRestStatus">Descanso de 5 min</span></button>
+                </div>
+            </div>
+
+            <div class="panel" style="border-color: #ca8a04;">
+                <div class="panel-title" style="color: #eab308;">📋 Pizarra de Jugadas Especiales</div>
+                <div class="skill-tree">
+                    <div class="tree-node" id="node-fire" onclick="unlockSkill('fire', 'Tiro Libre al Ángulo')">
+                        <b style="color:#ef4444; font-size:11px;">OFENSIVA</b><br>
+                        <span style="font-size:12px;">Tiro Libre Letal</span><br>
+                        <div id="status-fire" style="font-size:10px; margin-top:4px; color:#ef4444;">Bloqueado</div>
+                    </div>
+                    <div class="tree-node" id="node-def" onclick="unlockSkill('def', 'Catenaccio Total')">
+                        <b style="color:#22c55e; font-size:11px;">RETROGUARDIA</b><br>
+                        <span style="font-size:12px;">Defensa de Hierro</span><br>
+                        <div id="status-def" style="font-size:10px; margin-top:4px; color:#ef4444;">Bloqueado</div>
+                    </div>
+                    <div class="tree-node" id="node-speed" onclick="unlockSkill('speed', 'Contraataque Feroz')">
+                        <b style="color:#38bdf8; font-size:11px;">VELOCIDAD</b><br>
+                        <span style="font-size:12px;">Sprint Explosivo</span><br>
+                        <div id="status-speed" style="font-size:10px; margin-top:4px; color:#ef4444;">Bloqueado</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel" style="border-color: #ef4444;">
+                <div class="panel-title" style="color: #ef4444;">🏟️ El Gran Derbi (La Arena de la Pasión)</div>
+                <div class="battle-grid">
+                    <div>
+                        <b id="txtPlayerNameTitle">Tu Equipo</b>
+                        <div class="hp-container"><div id="hpPlayer" class="hp-fill"></div></div>
+                        <span id="txtPlayerHp">100/100 Energía</span>
+                        <div class="mp-container"><div id="mpPlayer" class="mp-fill"></div></div>
+                        <span id="txtPlayerMp" style="font-size:11px; color:#60a5fa;">50/50 Táctica</span>
+                    </div>
+                    <div>
+                        <b style="color:#ef4444;">Rival Clásico (El Desafío)</b>
+                        <div class="hp-container"><div id="hpEnemy" class="hp-fill" style="background-color:#ef4444;"></div></div>
+                        <span id="txtEnemyHp">120/120 Presión</span>
+                    </div>
+                </div>
+                
+                <p id="battleConsole" style="font-size:12px; background:#03070a; padding:8px; border-radius:6px; margin:10px 0; color:#cbd5e1;">¡El árbitro da el pitazo inicial! Vive la pasión.</p>
+                
+                <div class="pokemon-moves-grid">
+                    <button id="btnMoveTackle" class="move-btn enabled" onclick="triggerAttack('tackle')">👟 Pase y Remate<br><span style="font-size:9px; color:#94a3b8;">[0 MP]</span></button>
+                    <button id="btnMovefire" class="move-btn" onclick="triggerAttack('fire')">🔮 Chilena / Tiro Libre<br><span style="font-size:9px; color:#60a5fa;">[Req. 15 Táctica]</span></button>
+                    <button id="btnMovedef" class="move-btn" onclick="triggerAttack('def')">🛡️ Bloqueo / Defensa<br><span style="font-size:9px; color:#60a5fa;">[Req. 15 Táctica]</span></button>
+                    <button id="btnMovespeed" class="move-btn" onclick="triggerAttack('speed')">⚡ Sprint / Contraataque<br><span style="font-size:9px; color:#60a5fa;">[Req. 15 Táctica]</span></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let pHP = 100; let maxPHP = 100;
+    let pMP = 50;  let maxPMP = 50;
+    let eHP = 120; let maxEHP = 120;
+    let isInitialized = false;
+    let timerRunning = false;
+
+    let inventory = { hpPotions: 0, mpPotions: 0 };
+
+    function showToast(text, isError=false) {
+        const t = document.getElementById('toast');
+        t.innerText = text; t.style.backgroundColor = isError ? "#ef4444" : "#10b981";
+        t.style.display = "block"; setTimeout(() => t.style.display="none", 2000);
+    }
+
+    function resetVisualSkills() {
+        const branches = ['fire', 'def', 'speed'];
+        branches.forEach(b => {
+            document.getElementById('node-' + b).classList.remove('unlocked');
+            document.getElementById('status-' + b).innerText = "Bloqueado";
+            document.getElementById('status-' + b).style.color = "#ef4444";
+            document.getElementById('btnMove' + b).classList.remove('enabled');
+        });
+    }
+
+    async function changeStarter(newName) {
+        resetVisualSkills();
+        const res = await fetch('http://localhost:8000/api/select-initial', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ moxie_name: newName })
+        });
+        const data = await res.json();
+        showToast(data.message);
+        isInitialized = false;
+        refreshUI();
+    }
+
+    async function handleRest() {
+        const res = await fetch('http://localhost:8000/api/secure-rest', { method: 'POST' });
+        if(res.status === 400) {
+            showToast("❌ Los jugadores siguen exhaustos en el vestuario.", true);
+            return;
+        }
+        const data = await res.json();
+        pHP = data.new_hp; pMP = data.new_mp;
+        showToast(`⏱️ Descanso de vestuario procesado de forma segura.`);
+        startCooldownTimer(data.cooldown_ms);
+        refreshUI();
+    }
+
+    function startCooldownTimer(durationMs) {
+        if(timerRunning) return;
+        timerRunning = true;
+        const btn = document.getElementById('btnRestAction');
+        const lbl = document.getElementById('lblRestStatus');
+        btn.disabled = true;
+
+        let targetTime = Date.now() + durationMs;
+
+        let interval = setInterval(() => {
+            let remaining = Math.ceil((targetTime - Date.now()) / 1000);
+            if (remaining <= 0) {
+                clearInterval(interval);
+                btn.disabled = false;
+                timerRunning = false;
+                lbl.innerText = "Descanso de 5 min";
+            } else {
+                let minutes = Math.floor(remaining / 60);
+                let seconds = remaining % 60;
+                lbl.innerText = `Charla técnica: ${minutes}m ${seconds}s`;
+            }
+        }, 1000);
+    }
+
+    async function useItem(type) {
+        if(type === 'hp') {
+            if(inventory.hpPotions > 0) {
+                inventory.hpPotions--; pHP = Math.min(maxPHP, pHP + 40);
+                showToast("🥤 Bebida Isotónica consumida (+40 Energía).");
+                await fetch('http://localhost:8000/api/sync-battle-damage', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ current_hp: pHP })
+                });
+            } else { showToast("No tienes Bebidas Isotónicas.", true); }
+        } else {
+            if(inventory.mpPotions > 0) {
+                inventory.mpPotions--; pMP = Math.min(maxPMP, pMP + 25);
+                showToast("⚡ Gel de Resistencia consumido (+25 Táctica).");
+            } else { showToast("No tienes Geles de Resistencia.", true); }
+        }
+        refreshUI();
+    }
+
+    async function refreshUI() {
+        try {
+            const currentFilter = document.getElementById('selFilter').value;
+            const res = await fetch(`http://localhost:8000/api/game-state?filter_type=${currentFilter}`);
+            const data = await res.json();
+            
+            document.getElementById('lblMoxieName').innerText = data.moxie.name;
+            document.getElementById('txtPlayerNameTitle').innerText = data.moxie.name;
+            document.getElementById('lblLevel').innerText = `División ${data.moxie.level}`;
+            document.getElementById('lblCoins').innerText = data.moxie.coins;
+            document.getElementById('lblHp').innerText = data.moxie.hp;
+            document.getElementById('lblAtk').innerText = data.moxie.atk;
+            document.getElementById('lblSp').innerText = data.moxie.sp;
+            
+            document.getElementById('countHPItem').innerText = inventory.hpPotions;
+            document.getElementById('countMPItem').innerText = inventory.mpPotions;
+
+            if(data.remaining_cooldown_ms > 0 && !timerRunning) {
+                startCooldownTimer(data.remaining_cooldown_ms);
+            }
+
+            maxPHP = data.moxie.max_hp; maxPMP = data.moxie.max_mp; maxEHP = data.enemy.max_hp;
+
+            if(!isInitialized) {
+                pHP = data.moxie.hp; pMP = data.moxie.mp; eHP = maxEHP;
+                isInitialized = true;
+            }
+
+            document.getElementById('hpEnemy').style.width = ((eHP / maxEHP) * 100) + "%";
+            document.getElementById('hpPlayer').style.width = ((pHP / maxPHP) * 100) + "%";
+            document.getElementById('mpPlayer').style.width = ((pMP / maxPMP) * 100) + "%";
+            
+            document.getElementById('txtEnemyHp').innerText = `${eHP}/${maxEHP} Presión`;
+            document.getElementById('txtPlayerHp').innerText = `${pHP}/${maxPHP} Energía`;
+            document.getElementById('txtPlayerMp').innerText = `${pMP}/${maxPMP} Táctica`;
+
+            let currentExpProgress = data.moxie.exp % 100;
+            document.getElementById('txtExp').innerText = `${currentExpProgress}/100`;
+            document.getElementById('expFill').style.width = currentExpProgress + "%";
+
+            const consoleBox = document.getElementById('consoleLogs');
+            consoleBox.innerHTML = data.logs.length > 0 ? data.logs.map(log => `> ${log}`).join("<br>") : "> Esperando jugadas...";
+
+            const branches = ['fire', 'def', 'speed'];
+            branches.forEach(b => {
+                const dbValue = data.moxie['skill_' + b];
+                if(dbValue !== "No Desbloqueado") {
+                    document.getElementById('node-' + b).classList.add('unlocked');
+                    document.getElementById('status-' + b).innerText = "🟢 DOMINADA";
+                    document.getElementById('status-' + b).style.color = "#4ade80";
+                    document.getElementById('btnMove' + b).classList.add('enabled');
+                } else {
+                    document.getElementById('btnMove' + b).classList.remove('enabled');
+                }
+            });
+
+        } catch(e) { console.log(e); }
+    }
+
+    window.onload = refreshUI;
+
+    async function sendAction(type) {
+        const res = await fetch('http://localhost:8000/api/moxie-action', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ action_type: type })
+        });
+        const data = await res.json();
+        showToast(data.message, !data.success);
+        refreshUI();
+    }
+
+    async function unlockSkill(branch, name) {
+        const res = await fetch('http://localhost:8000/api/unlock-skill', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ branch: branch, skill_name: name })
+        });
+        const data = await res.json();
+        if(data.success) showToast(data.message);
+        else showToast(data.message, true);
+        refreshUI();
+    }
+
+    async function triggerAttack(typeMove) {
+        if(pHP <= 0) { showToast("❌ Jugadores agotados. ¡Deben ir al vestuario a descansar!", true); return; }
+        
+        const btn = document.getElementById('btnMove' + typeMove);
+        if (typeMove !== 'tackle' && !btn.classList.contains('enabled')) {
+            showToast("⚠️ ¡Debes diseñar esta estrategia en la pizarra primero!", true);
+            return;
+        }
+
+        const res = await fetch('http://localhost:8000/api/execute-attack', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ attack_type: typeMove })
+        });
+        const data = await res.json();
+
+        if (data.error) { showToast(data.message, true); return; }
+
+        eHP -= data.player_dmg; pHP -= data.enemy_dmg; pMP -= data.mana_used;
+        if(eHP < 0) eHP = 0; if(pHP < 0) pHP = 0;
+
+        document.getElementById('hpEnemy').style.width = ((eHP / maxEHP) * 100) + "%";
+        document.getElementById('hpPlayer').style.width = ((pHP / maxPHP) * 100) + "%";
+        document.getElementById('mpPlayer').style.width = ((pMP / maxPMP) * 100) + "%";
+        document.getElementById('txtEnemyHp').innerText = `${eHP}/${maxEHP} Presión`;
+        document.getElementById('txtPlayerHp').innerText = `${pHP}/${maxPHP} Energía`;
+        document.getElementById('txtPlayerMp').innerText = `${pMP}/${maxPMP} Táctica`;
+
+        document.getElementById('battleConsole').innerText = `${data.flavor} El rival contraataca y resta ${data.enemy_dmg} de energía.`;
+
+        await fetch('http://localhost:8000/api/sync-battle-damage', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ current_hp: pHP })
+        });
+
+        if(eHP <= 0) {
+            const rewardRes = await fetch('http://localhost:8000/api/victory-reward', { method: 'POST' });
+            const rewardData = await rewardRes.json();
+            
+            if (rewardData.dropped.includes("Isotónica")) inventory.hpPotions++;
+            if (rewardData.dropped.includes("Gel")) inventory.mpPotions++;
+            
+            alert(rewardData.message);
+            isInitialized = false; 
+            refreshUI();
+        }
+    }
+</script>
+</body>
+</html>
